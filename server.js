@@ -75,10 +75,29 @@ mongoose.connect(process.env.MONGO_URL, {
         res.json(req.session.user);
     });
 
-    app.get('/dashboard', (req, res) => {
-        if (!req.session.user) return res.status(401).send("Unauthorized");
-        res.json(req.session.user);
-    });
+   app.get('/dashboard', async (req, res) => {
+    if (!req.session.user || !req.session.user.id) {
+        return res.status(401).send("Unauthorized");
+    }
+
+    try {
+        const user = await User.findById(req.session.user.id);
+        if (!user) return res.status(404).send("User not found");
+
+        res.json({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            pincode: user.pincode,
+            dob: user.dob,
+            address: user.address
+        });
+    } catch (err) {
+        console.error("Error fetching user:", err);
+        res.status(500).send("Server error");
+    }
+});
 
     app.post('/logout', (req, res) => {
         req.session.destroy(err => {
